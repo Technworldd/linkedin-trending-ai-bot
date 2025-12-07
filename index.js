@@ -83,10 +83,9 @@ Format the output as ready-to-post LinkedIn text only (plain text, normal line b
   return text;
 }
 
-// 3) Post that text to LinkedIn using REST Posts API
 async function postToLinkedIn(authorUrn, text) {
   const body = {
-    author: authorUrn, // e.g. "urn:li:person:97Q0E6swot"
+    author: authorUrn,
     commentary: text,
     visibility: "PUBLIC",
     lifecycleState: "PUBLISHED",
@@ -112,6 +111,7 @@ async function postToLinkedIn(authorUrn, text) {
     throw new Error("LinkedIn post error: " + err);
   }
 }
+
 
 // 4) Main
 (async () => {
