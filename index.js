@@ -101,8 +101,8 @@ async function postToLinkedIn(authorUrn, text) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
-      "Content-Type": "application/json"
-      // Removed LinkedIn-Version – previous value was not active
+      "Content-Type": "application/json",
+      "LinkedIn-Version": "202404"
     },
     body: JSON.stringify(body)
   });
