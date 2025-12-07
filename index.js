@@ -2,7 +2,6 @@
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
-const LINKEDIN_AUTHOR_URN = process.env.LINKEDIN_AUTHOR_URN; // e.g. 'urn:li:person:abc123...'
 
 if (!GEMINI_API_KEY) {
   console.error("❌ GEMINI_API_KEY is not set.");
@@ -14,12 +13,30 @@ if (!LINKEDIN_ACCESS_TOKEN) {
   process.exit(1);
 }
 
-if (!LINKEDIN_AUTHOR_URN) {
-  console.error("❌ LINKEDIN_AUTHOR_URN is not set.");
-  process.exit(1);
+// 1) Get your LinkedIn person URN using the access token
+async function getLinkedInAuthorUrn() {
+  const res = await fetch("https://api.linkedin.com/v2/userinfo", {
+    headers: {
+      Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
+      "LinkedIn-Version": "202402"
+    }
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error("LinkedIn /userinfo error: " + err);
+  }
+
+  const data = await res.json();
+  if (!data.sub) {
+    throw new Error("LinkedIn /userinfo response has no 'sub' field.");
+  }
+
+  // sub looks like: "urn:li:person:xxxx"
+  return data.sub;
 }
 
-// 1) Ask Gemini to create the LinkedIn post text
+// 2) Ask Gemini to create the LinkedIn post text
 async function generatePost() {
   const prompt = `
 Search for the top AI-in-business post from r/aibusiness from the last 24 hours, extract the key insights, and generate a professional LinkedIn post with:
@@ -59,10 +76,10 @@ Format the output as ready-to-post LinkedIn text only (plain text, normal line b
   return text;
 }
 
-// 2) Post that text to LinkedIn using REST Posts API
-async function postToLinkedIn(text) {
+// 3) Post that text to LinkedIn using REST Posts API
+async function postToLinkedIn(authorUrn, text) {
   const body = {
-    author: LINKEDIN_AUTHOR_URN, // e.g. 'urn:li:person:abc123...'
+    author: authorUrn, // e.g. 'urn:li:person:xxxx...'
     commentary: text,
     visibility: "PUBLIC",
     lifecycleState: "PUBLISHED",
@@ -89,14 +106,19 @@ async function postToLinkedIn(text) {
   }
 }
 
+// 4) Main
 (async () => {
   try {
+    console.log("👤 Getting LinkedIn author URN...");
+    const authorUrn = await getLinkedInAuthorUrn();
+    console.log("Author URN:", authorUrn);
+
     console.log("🧠 Generating post with Gemini...");
     const text = await generatePost();
     console.log("✏️ Gemini text:\n", text);
 
     console.log("🚀 Posting to LinkedIn...");
-    await postToLinkedIn(text);
+    await postToLinkedIn(authorUrn, text);
 
     console.log("🎉 Successfully posted to LinkedIn.");
   } catch (err) {
