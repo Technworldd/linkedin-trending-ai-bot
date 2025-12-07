@@ -18,7 +18,7 @@ async function getLinkedInAuthorUrn() {
   const res = await fetch("https://api.linkedin.com/v2/userinfo", {
     headers: {
       Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
-      "LinkedIn-Version": "202402"
+      // Do NOT send LinkedIn-Version here – it caused NONEXISTENT_VERSION
     }
   });
 
@@ -28,12 +28,19 @@ async function getLinkedInAuthorUrn() {
   }
 
   const data = await res.json();
-  if (!data.sub) {
-    throw new Error("LinkedIn /userinfo response has no 'sub' field.");
+
+  // LinkedIn may return 'sub' or 'id'
+  let sub = data.sub || data.id;
+  if (!sub) {
+    throw new Error("LinkedIn /userinfo response has no 'sub' or 'id' field.");
   }
 
-  // sub looks like: "urn:li:person:xxxx"
-  return data.sub;
+  // If it is not already a full URN, wrap it
+  if (!sub.startsWith("urn:")) {
+    sub = `urn:li:person:${sub}`;
+  }
+
+  return sub; // e.g. "urn:li:person:97Q0E6swot"
 }
 
 // 2) Ask Gemini to create the LinkedIn post text
@@ -77,44 +84,28 @@ Format the output as ready-to-post LinkedIn text only (plain text, normal line b
 }
 
 // 3) Post that text to LinkedIn using REST Posts API
-async function getLinkedInAuthorUrn() {
-  const res = await fetch("https://api.linkedin.com/v2/userinfo", {
-    headers: {
-      Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`
-      // No LinkedIn-Version header here
+async function postToLinkedIn(authorUrn, text) {
+  const body = {
+    author: authorUrn, // e.g. "urn:li:person:97Q0E6swot"
+    commentary: text,
+    visibility: "PUBLIC",
+    lifecycleState: "PUBLISHED",
+    distribution: {
+      feedDistribution: "MAIN_FEED",
+      targetEntities: [],
+      thirdPartyDistributionChannels: []
     }
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error("LinkedIn /userinfo error: " + err);
-  }
-
-  const data = await res.json();
-
-  // LinkedIn can return either a URN or just an ID
-  let sub = data.sub || data.id;
-  if (!sub) {
-    throw new Error("LinkedIn /userinfo response has no 'sub' or 'id' field.");
-  }
-
-  // If it is not already a full URN, wrap it
-  if (!sub.startsWith("urn:")) {
-    sub = `urn:li:person:${sub}`;
-  }
-
-  return sub; // e.g. "urn:li:person:97Q0E6swot"
-}
+  };
 
   const res = await fetch("https://api.linkedin.com/rest/posts", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(body)
-});
-
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
+      "Content-Type": "application/json"
+      // Removed LinkedIn-Version – previous value was not active
+    },
+    body: JSON.stringify(body)
+  });
 
   if (!res.ok) {
     const err = await res.text();
