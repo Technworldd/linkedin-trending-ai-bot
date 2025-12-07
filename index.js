@@ -77,28 +77,44 @@ Format the output as ready-to-post LinkedIn text only (plain text, normal line b
 }
 
 // 3) Post that text to LinkedIn using REST Posts API
-async function postToLinkedIn(authorUrn, text) {
-  const body = {
-    author: authorUrn, // e.g. 'urn:li:person:xxxx...'
-    commentary: text,
-    visibility: "PUBLIC",
-    lifecycleState: "PUBLISHED",
-    distribution: {
-      feedDistribution: "MAIN_FEED",
-      targetEntities: [],
-      thirdPartyDistributionChannels: []
+async function getLinkedInAuthorUrn() {
+  const res = await fetch("https://api.linkedin.com/v2/userinfo", {
+    headers: {
+      Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`
+      // No LinkedIn-Version header here
     }
-  };
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error("LinkedIn /userinfo error: " + err);
+  }
+
+  const data = await res.json();
+
+  // LinkedIn can return either a URN or just an ID
+  let sub = data.sub || data.id;
+  if (!sub) {
+    throw new Error("LinkedIn /userinfo response has no 'sub' or 'id' field.");
+  }
+
+  // If it is not already a full URN, wrap it
+  if (!sub.startsWith("urn:")) {
+    sub = `urn:li:person:${sub}`;
+  }
+
+  return sub; // e.g. "urn:li:person:97Q0E6swot"
+}
 
   const res = await fetch("https://api.linkedin.com/rest/posts", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-      "LinkedIn-Version": "202402"
-    },
-    body: JSON.stringify(body)
-  });
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(body)
+});
+
 
   if (!res.ok) {
     const err = await res.text();
