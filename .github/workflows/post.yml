@@ -1,12 +1,12 @@
-name: Daily LinkedIn AI Post
+name: Daily LinkedIn AI Post (Text Only)
 
 on:
   schedule:
     - cron: "30 5 * * *"  # 11:00 AM IST
-  workflow_dispatch:      # allow manual run
+  workflow_dispatch:      # allow manual run anytime
 
 jobs:
-  post-linkedin:
+  generate-linkedin-text:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,8 +18,7 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Run script
+      - name: Generate LinkedIn text with Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
         run: node index.js
