@@ -18,8 +18,8 @@ Search for the top AI-in-business post from r/aibusiness from the last 24 hours,
 Format the output as ready-to-post LinkedIn text only (plain text, normal line breaks, no markdown, no JSON, no escape sequences like \\n).
   `;
 
-  const res = await fetch(
-  "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=" +
+ const res = await fetch(
+  "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" +
     GEMINI_API_KEY,
   {
     method: "POST",
@@ -29,6 +29,7 @@ Format the output as ready-to-post LinkedIn text only (plain text, normal line b
     })
   }
 );
+
 
   if (!res.ok) {
     const err = await res.text();
