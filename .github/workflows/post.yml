@@ -18,10 +18,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Generate and post to LinkedIn
+      - name: Generate and send to n8n
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
         run: node index.js
+
 
 
